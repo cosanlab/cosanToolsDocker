@@ -1,43 +1,42 @@
-#CosanLab docker spec
+#COSANLAB DOCKERSPEC
 
-#ANTs is a pain in the a** to install to inherit from a working container
+#ANTS IS A PAIN IN THE A** TO INSTALL SO INHERIT FROM A WORKING CONTAINER
 FROM bids/base_ants:latest
 
 MAINTAINER Eshin Jolly <eshin.jolly.gr@dartmouth.edu>
 
-#Install utilities to download miniconda and clone our tools repo
-#Then actually download and install conda and update paths
-RUN apt-get update && \
-	apt-get install -y wget git curl python-dev && \
-	wget http://repo.continuum.io/archive/Miniconda2-latest-Linux-x86_64.sh && \
-	bash Miniconda2-latest-Linux-x86_64.sh -b -p $HOME/anaconda
+#STEAL A BUNCH FROM CONTINUUM DOCKERSPEC
+ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 
-ENV PATH="$HOME/anaconda/bin:$PATH" \
+#INSTALL NIX PROGRAMS
+RUN apt-get update --fix-missing && apt-get install -y wget bzip2 ca-certificates \
+    libglib2.0-0 libxext6 libsm6 libxrender1 \
+    git mercurial subversion curl grep sed dpkg
 
-#Install python packages
-RUN conda install jupyter
+RUN echo 'export PATH=/opt/conda/bin:$PATH' > /etc/profile.d/conda.sh && \
+    wget --quiet https://repo.continuum.io/archive/Anaconda2-4.2.0-Linux-x86.sh -O ~/anaconda.sh && \
+    /bin/bash ~/anaconda.sh -b -p /opt/conda && \
+    rm ~/anaconda.sh
 
+#NEED TINI TO GET NOTEBOOKS WORKING PROPERLY AS IT DEALS WITH SPAWNING A CHILD PROCESS TO HANDLE COMMUNICATION WITH THE NOTEBOOK SERVER
+RUN apt-get install -y python-dev && \
+    TINI_VERSION=`curl https://github.com/krallin/tini/releases/latest | grep -o "/v.*\"" | sed 's:^..\(.*\).$:\1:'` && \
+    curl -L "https://github.com/krallin/tini/releases/download/v${TINI_VERSION}/tini_${TINI_VERSION}.deb" > tini.deb && \
+    dpkg -i tini.deb && \
+    rm tini.deb && \
+    apt-get clean
 
-#Install additional python packages
-RUN pip install -q nipype nilearn nltools
+#UPDATE PATH
+ENV PATH /opt/conda/bin:$PATH
 
-#Might need these
-#RUN pip install git+https://github.com/ljchang/neurolearn
-#Run conda install -y pyqt
+#INSTALL ADDITIONAL PYTHON PACKAGES
+RUN pip install nipype nilearn nltools
 
-#Install required python libraries if using miniconda instead
-#RUN conda install jupyter 
-#RUN pip install nilearn nipype sklearn pandas matplotlib seaborn ipython
-#RUN pip install git+https://github.com/ljchang/neurolearn
+#ALWAYS INIT WITH TINI
+ENTRYPOINT [ "/usr/bin/tini", "--" ]
 
-#Clean up to keep container weight light
-RUN rm Anaconda2-4.2.0-Linux-x86_64.sh && \
-	apt-get remove -y curl git && \
-	rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+#LISTEN AT THIS PORT
+EXPOSE 8888
 
-#If we're installing google chrome (probs dont need it)
-#Point to google chrome repo so apt-get can get it then install
-#wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
-#sudo sh -c 'echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list'
-#apt-get update
-#apt-get --assume-yes install google-chrome-stable
+#WITHOUT ANY RUN ARGS, DEFAULT START THE CONTAINER USING A SHELL
+CMD [ "/bin/bash" ]
