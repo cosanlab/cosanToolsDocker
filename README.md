@@ -25,3 +25,4 @@ Alternatively you can create a container that defaults to a shell environment an
 ## Todo:  
 - Strip down package needs and overhead
 - Miniconda with required dependencies doesn't shrink docker image that much...
+- Figure out nltools pip install order bug
