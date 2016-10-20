@@ -14,7 +14,7 @@ RUN apt-get update --fix-missing && apt-get install -y wget bzip2 ca-certificate
     git mercurial subversion curl grep sed dpkg
 
 RUN echo 'export PATH=/opt/conda/bin:$PATH' > /etc/profile.d/conda.sh && \
-    wget --quiet https://repo.continuum.io/archive/Anaconda2-4.2.0-Linux-x86.sh -O ~/anaconda.sh && \
+    wget --quiet https://repo.continuum.io/archive/Anaconda2-4.2.0-Linux-x86_64.sh -O ~/anaconda.sh && \
     /bin/bash ~/anaconda.sh -b -p /opt/conda && \
     rm ~/anaconda.sh
 
@@ -29,8 +29,9 @@ RUN apt-get install -y python-dev && \
 #UPDATE PATH
 ENV PATH /opt/conda/bin:$PATH
 
+RUN pip install seaborn nibabel nilearn nipype
 #INSTALL ADDITIONAL PYTHON PACKAGES
-RUN pip install nipype nilearn nltools
+RUN pip install nltools
 
 #ALWAYS INIT WITH TINI
 ENTRYPOINT [ "/usr/bin/tini", "--" ]
