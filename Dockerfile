@@ -31,13 +31,32 @@ RUN apt-get install -y python-dev && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
+#INSTALL FSL
+RUN curl -sSL http://neuro.debian.net/lists/trusty.us-tn.full >> /etc/apt/sources.list.d/neurodebian.sources.list && \
+    apt-key adv --recv-keys --keyserver hkp://pgp.mit.edu:80 0xA5D32F012649A5A9 && \
+    apt-get update && \
+    apt-get install -y fsl-core && \
+    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+#CONFIG FSL
+ENV FSLDIR=/usr/share/fsl/5.0
+ENV FSLOUTPUTTYPE=NIFTI_GZ
+ENV PATH=/usr/lib/fsl/5.0:$PATH
+ENV FSLMULTIFILEQUIT=TRUE
+ENV POSSUMDIR=/usr/share/fsl/5.0
+ENV LD_LIBRARY_PATH=/usr/lib/fsl/5.0:$LD_LIBRARY_PATH
+ENV FSLTCLSH=/usr/bin/tclsh
+ENV FSLWISH=/usr/bin/wish
+ENV FSLOUTPUTTYPE=NIFTI_GZ
 
 #INSTALL ADDITIONAL PYTHON PACKAGES
-RUN pip install seaborn nibabel nilearn nipype nipy
+RUN pip install seaborn nibabel nilearn
+
 #WE NEED DEV VERSIONS OF NIPY AND NIPYPE FOR ALL PREPROCC FUNCTIONS
 RUN pip install git+https://github.com/nipy/nipy
 RUN pip install git+https://github.com/nipy/nipype
-RUN pip install nltools
+RUN pip install git+https://github.com/ljchang/nltools
+#RUN pip install git+https://github.com/ejolly/nltools
 
 #ALWAYS INIT WITH TINI
 ENTRYPOINT [ "/usr/bin/tini", "--" ]
