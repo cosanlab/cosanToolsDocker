@@ -56,7 +56,6 @@ RUN pip install seaborn nibabel nilearn
 RUN pip install git+https://github.com/nipy/nipy
 RUN pip install git+https://github.com/nipy/nipype
 RUN pip install git+https://github.com/ljchang/nltools
-#RUN pip install git+https://github.com/ejolly/nltools
 
 #ALWAYS INIT WITH TINI
 ENTRYPOINT [ "/usr/bin/tini", "--" ]
