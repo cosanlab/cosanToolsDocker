@@ -21,6 +21,8 @@ Alternatively you can create a container that defaults to a shell environment an
 - [Anaconda package management and scientific python stack](https://github.com/conda/conda)
 - [ANTs Normalization Tools](https://github.com/stnava/ANTs)
 - [Neurolearn](https://github.com/ljchang/nltools)
+- [Nipype](http://nipype.readthedocs.io/en/latest/)
+- [FSL](http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/)
 
 ## Todo:  
 - Strip down package needs and overhead
