@@ -42,6 +42,11 @@ The following command will create a new container and open up a bash terminal in
 
 `docker run -it -p 8888:8888 --name yourContainerName -v /path/to/folder/on/your/comp/to/share:/path/to/mount/folder/in/container ejolly/cosantoolsdocker`
 
+***Port Issues***:  
+*If you already have a jupyter notebook running locally on your computer at port 8888 you will probably need to close it before creating a container, then reopen it after. This is because this container only exposes port 8888, whereas jupyter notebooks will find a free port serve from if 8888 is in use.*  
+    
+*If you still have port problems, trying restarting Docker itself (click on the whale icon by your system clock and select restart).*  
+
 This container is **persistent** so when you close it (i.e. ctr/cmd+D) it will shutdown but will not be deleted.  
 You can add the `--rm` flag to the command above to auto delete on exit. 
 
