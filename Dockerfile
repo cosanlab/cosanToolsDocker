@@ -24,15 +24,12 @@ ENV PATH /opt/conda/bin:$PATH
 
 #NEED TINI TO GET NOTEBOOKS WORKING PROPERLY AS IT DEALS WITH SPAWNING A CHILD PROCESS TO HANDLE COMMUNICATION WITH THE NOTEBOOK SERVER
 RUN apt-get install -y python-dev && \
-    TINI_VERSION=`curl https://github.com/krallin/tini/releases/latest | grep -o "/v.*\"" | sed 's:^..\(.*\).$:\1:'` && \
-    curl -L "https://github.com/krallin/tini/releases/download/v${TINI_VERSION}/tini_${TINI_VERSION}.deb" > tini.deb && \
-    dpkg -i tini.deb && \
-    rm tini.deb && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 #INSTALL FSL
-RUN curl -sSL http://neuro.debian.net/lists/trusty.us-tn.full >> /etc/apt/sources.list.d/neurodebian.sources.list && \
+#ADD NEURODEBIAN LISTS FROM DMOUTH MIRROR TO APT SOURCES, THEN GRAB FSL
+RUN curl -sSL http://neuro.debian.net/lists/trusty.us-nh.full >> /etc/apt/sources.list.d/neurodebian.sources.list && \
     apt-key adv --recv-keys --keyserver hkp://pgp.mit.edu:80 0xA5D32F012649A5A9 && \
     apt-get update && \
     apt-get install -y fsl-core && \
@@ -57,11 +54,6 @@ RUN pip install git+https://github.com/nipy/nipy
 RUN pip install git+https://github.com/nipy/nipype
 RUN pip install git+https://github.com/ljchang/nltools
 
-#ALWAYS INIT WITH TINI
-ENTRYPOINT [ "/usr/bin/tini", "--" ]
+#START BASH ON CONTAINER CREATION
+ENTRYPOINT [ "/bin/bash"]
 
-#LISTEN AT THIS PORT
-EXPOSE 8888
-
-#WITHOUT ANY RUN ARGS, DEFAULT START THE CONTAINER USING A SHELL
-CMD [ "/bin/bash" ]
