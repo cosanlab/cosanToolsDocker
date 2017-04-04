@@ -1,12 +1,16 @@
 #COSANLAB DOCKERSPEC
-#CURRENTLY NOT COMPATIBLE WITH SINGULARITY
 
-#ANTS IS A PAIN IN THE A** TO INSTALL SO INHERIT FROM A WORKING CONTAINER
-FROM bids/base_ants:latest
+#BECAUSE WE CANT BASE FROM TWO IMAGES WE'RE GOING TO BASE FROM ANTS (BECAUSE IT'S A PAIN IN THE A** TO INSTALL), AND THEN DUMP THE ANACONDA DOCKERFILE CONTENTS IN HERE
+
+#########################
+### INHERIT FROM ANTS ###
+#########################
+FROM bids/base_ants@sha256:bf87a7c55dc13a6ef0959971e77a7bbc9c6885015287fb5ddc5f8c101dc47240
 
 MAINTAINER Eshin Jolly <eshin.jolly.gr@dartmouth.edu>
 
-#STEAL A BUNCH FROM CONTINUUM DOCKERSPEC
+#################################
+###INHERIT FROM ANACONDA ########
 ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 
 #INSTALL NIX PROGRAMS
@@ -32,6 +36,10 @@ RUN apt-get install -y python-dev && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
+############################
+### ADD ADDITIONAL TOOLS ###
+############################
+
 #INSTALL FSL
 RUN curl -sSL http://neuro.debian.net/lists/trusty.us-nh.full >> /etc/apt/sources.list.d/neurodebian.sources.list && \
     apt-key adv --recv-keys --keyserver hkp://pgp.mit.edu:80 0xA5D32F012649A5A9 && \
@@ -50,13 +58,14 @@ ENV FSLTCLSH=/usr/bin/tclsh
 ENV FSLWISH=/usr/bin/wish
 ENV FSLOUTPUTTYPE=NIFTI_GZ
 
+#CONFIG PYTHONPATH
+ENV PYTHONPATH=/usr/local/lib/python2.7/site-packages
+
 #INSTALL ADDITIONAL PYTHON PACKAGES
 RUN pip install seaborn nibabel nilearn
-
-#WE NEED DEV VERSIONS OF NIPY AND NIPYPE FOR ALL PREPROCC FUNCTIONS
-RUN pip install git+https://github.com/nipy/nipy
 RUN pip install git+https://github.com/nipy/nipype
 RUN pip install git+https://github.com/ljchang/nltools
+RUN pip install git+https://github.com/cosanlab/cosanlab_preproc
 
 #ALWAYS INIT WITH TINI
 ENTRYPOINT [ "/usr/bin/tini", "--" ]
