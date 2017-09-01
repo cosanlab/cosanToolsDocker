@@ -1,53 +1,73 @@
-#COSANLAB DOCKERSPEC
+FROM ubuntu:xenial-20161213
 
-#BECAUSE WE CANT BASE FROM TWO IMAGES WE'RE GOING TO BASE FROM ANTS (BECAUSE IT'S A PAIN IN THE A** TO INSTALL), AND THEN DUMP THE ANACONDA DOCKERFILE CONTENTS IN HERE
+##########################
+### Setup environment ####
+##########################
 
-#########################
-### INHERIT FROM ANTS ###
-#########################
-FROM bids/base_ants@sha256:bf87a7c55dc13a6ef0959971e77a7bbc9c6885015287fb5ddc5f8c101dc47240
+# Install required system packages
+RUN apt-get update --fix-missing && apt-get install -y eatmydata
 
-MAINTAINER Eshin Jolly <eshin.jolly.gr@dartmouth.edu>
+RUN eatmydata apt-get install -y wget bzip2 ca-certificates \
+    libglib2.0-0 libxext6 libsm6 libxrender1 libfreetype6-dev \
+    git \
+    mercurial \
+    subversion \
+    curl grep sed \
+    dpkg \
+    graphviz \
+    vim nano \
+    libgl1-mesa-glx \
+    ffmpeg \
+    fonts-liberation \
+    build-essential \
+    gcc \
+    pkg-config \
+    ca-certificates \
+    xvfb \
+    autoconf \
+    libtool
 
-#################################
-###INHERIT FROM ANACONDA ########
-ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
+# Add Neurodebian package repositories (i.e. for FSL)
+RUN curl -sSL http://neuro.debian.net/lists/trusty.us-nh.full >> /etc/apt/sources.list.d/neurodebian.sources.list && \
+    apt-key adv --recv-keys --keyserver hkp://pgp.mit.edu:80 0xA5D32F012649A5A9 && \
+    apt-get update
 
-#INSTALL NIX PROGRAMS
-RUN apt-get update --fix-missing && apt-get install -y wget bzip2 ca-certificates \
-    libglib2.0-0 libxext6 libsm6 libxrender1 \
-    git mercurial subversion curl grep sed dpkg graphviz
+#######################
+### Setup Anaconda ####
+#######################
 
-#INSTALL ANACONDA AND UPDATE PATH
+# Download and install
 RUN echo 'export PATH=/opt/conda/bin:$PATH' > /etc/profile.d/conda.sh && \
-    wget --quiet https://repo.continuum.io/archive/Anaconda2-4.2.0-Linux-x86_64.sh -O ~/anaconda.sh && \
+    wget --quiet https://repo.continuum.io/archive/Anaconda2-4.4.0-Linux-x86_64.sh -O ~/anaconda.sh && \
     /bin/bash ~/anaconda.sh -b -p /opt/conda && \
     rm ~/anaconda.sh
 
-#UPDATE PATH
+# Setup path
 ENV PATH /opt/conda/bin:$PATH
+ENV PYTHONPATH=/usr/local/lib/python2.7/site-packages
 
-#NEED TINI TO GET NOTEBOOKS WORKING PROPERLY AS IT DEALS WITH SPAWNING A CHILD PROCESS TO HANDLE COMMUNICATION WITH THE NOTEBOOK SERVER
-RUN apt-get install -y python-dev && \
-    TINI_VERSION=`curl https://github.com/krallin/tini/releases/latest | grep -o "/v.*\"" | sed 's:^..\(.*\).$:\1:'` && \
-    curl -L "https://github.com/krallin/tini/releases/download/v${TINI_VERSION}/tini_${TINI_VERSION}.deb" > tini.deb && \
-    dpkg -i tini.deb && \
-    rm tini.deb && \
-    apt-get clean && \
+###################
+### Setup ANTS ####
+###################
+
+# Download and install (NeuroDocker build)
+ENV ANTSPATH=/usr/lib/ants
+RUN mkdir -p $ANTSPATH && \
+    curl -sSL "https://dl.dropbox.com/s/2f4sui1z6lcgyek/ANTs-Linux-centos5_x86_64-v2.2.0-0740f91.tar.gz" \
+    | tar -xzC $ANTSPATH --strip-components 1
+
+# Setup path
+ENV PATH=$ANTSPATH:$PATH
+
+#################
+## Setup FSL ####
+#################
+
+# Setup neurodebian repo and install
+RUN apt-get install -y fsl-core && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-############################
-### ADD ADDITIONAL TOOLS ###
-############################
-
-#INSTALL FSL
-RUN curl -sSL http://neuro.debian.net/lists/trusty.us-nh.full >> /etc/apt/sources.list.d/neurodebian.sources.list && \
-    apt-key adv --recv-keys --keyserver hkp://pgp.mit.edu:80 0xA5D32F012649A5A9 && \
-    apt-get update && \
-    apt-get install -y fsl-core && \
-    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
-#CONFIG FSL
+# Config
 ENV FSLDIR=/usr/share/fsl/5.0
 ENV FSLOUTPUTTYPE=NIFTI_GZ
 ENV PATH=/usr/lib/fsl/5.0:$PATH
@@ -58,20 +78,20 @@ ENV FSLTCLSH=/usr/bin/tclsh
 ENV FSLWISH=/usr/bin/wish
 ENV FSLOUTPUTTYPE=NIFTI_GZ
 
-#CONFIG PYTHONPATH
-ENV PYTHONPATH=/usr/local/lib/python2.7/site-packages
 
-#INSTALL ADDITIONAL PYTHON PACKAGES
-RUN pip install seaborn nibabel nilearn
-RUN pip install git+https://github.com/nipy/nipype
-RUN pip install git+https://github.com/ljchang/nltools
-RUN pip install git+https://github.com/cosanlab/cosanlab_preproc
+########################################
+## Setup Additional Python packages ####
+########################################
 
-#ALWAYS INIT WITH TINI
-ENTRYPOINT [ "/usr/bin/tini", "--" ]
+RUN pip install \
+    hypertools dask mne dask pynv nipype && \
+    pip install git+https://github.com/ljchang/nltools && \
+    pip install git+https://github.com/cosanlab/cosanlab_preproc
 
-#LISTEN AT THIS PORT
+##########################
+## Container settings ####
+##########################
+
+ENTRYPOINT ["/bin/bash"]
+
 EXPOSE 8888
-
-#WITHOUT ANY RUN ARGS, DEFAULT START THE CONTAINER USING A SHELL
-CMD [ "/bin/bash" ]
